@@ -1,8 +1,9 @@
 <script lang="ts">
-    import type Cat from "../../@types/Cat";
-    import type User from "../../@types/User";
+    import type ICat from "../../@types/ICat";
+    import type IUser from "../../@types/IUser";
     import NextPage from "../page/NextPage.svelte";
-    import Inner from "../page/Inner.svelte";
+    import Outer from "../page/Outer.svelte";
+    import BigRedButton from "../page/BigRedButton.svelte";
 
 	let name: string = 'world';
 	let src: string = 'images/favicon.png';
@@ -22,12 +23,12 @@
     let add = () => numbers = [...numbers, numbers.length + 1];
     $: sum = numbers.reduce((t, n) => t + n, 0);
 
-    let user: User = {
+    let user: IUser = {
         isLogin: false,
     };
     let toggle = () => user.isLogin = !user.isLogin;
 
-    let cats: Cat[] = [
+    let cats: ICat[] = [
         { id: 1, name: '1' },
         { id: 2, name: '2' },
         { id: 3, name: '3' },
@@ -36,6 +37,40 @@
     let handleClick = () => {
         alert('no more alert');
     };
+
+    let buttonClick = () => {
+        alert('button clicked');
+    };
+
+    let a: number = 1;
+	let b: number = 2;
+
+    let yes: boolean = false;
+
+    let questions = [
+		{
+			id: 1,
+			text: `Where did you go to school?`
+		},
+		{
+			id: 2,
+			text: `What is your mother's name?`
+		},
+		{
+			id: 3,
+			text: `What is another personal fact that an attacker could easily find with Google?`
+		}
+	];
+
+	let selected: { id: any; text: any; };
+
+	let answer = '';
+
+	let handleSubmit = () => {
+		alert(
+			`answered question ${selected.id} (${selected.text}) with "${answer}"`
+		);
+	}
 </script>
 
 <div>
@@ -82,7 +117,80 @@
      -->
     <button on:click|once={handleClick}> Click </button>
 
-    <Inner on:message={ event => alert(event.detail.text) } />
+    <Outer on:message={ event => alert(event.detail.text) } />
+
+    <BigRedButton on:click={buttonClick} />
+
+    <!-- bind를 사용하게 되면 변경되는 이벤트를 감지하여 value를 변경한다. -->
+    <input bind:value={name} />
+
+
+    <!--
+        DOM에서는 모든 것이 문자열입니다. 이는 유형="숫자" 및 유형="범위"와 같은 숫자 입력을 처리할 때 유용하지 않습니다.
+        입력값을 사용하기 전에 입력값을 강제로 입력해야 한다는 것을 기억해야 하기 때문입니다.
+
+        svelte에서는 bind를 사용하면 이를 자동으로 처리합니다.
+     -->
+    <label>
+        <input type="number" bind:value={a} min="0" max="10" />
+        <input type="range" bind:value={a} min="0" max="10" />
+    </label>
+
+    <label>
+        <input type="number" bind:value={b} min="0" max="10" />
+        <input type="range" bind:value={b} min="0" max="10" />
+    </label>
+
+    <p>{a} + {b} = {a + b}</p>
+
+    <!--
+        체크박스는 상태 간 토글에 사용됩니다. checked를 사용합니다.
+     -->
+    <label>
+        <input type="checkbox" bind:checked={yes} />
+        Yes! Send me regular email spam
+    </label>
+
+    {#if yes}
+        <p>
+            Thank you. We will bombard your inbox and sell
+            your personal details.
+        </p>
+    {:else}
+        <p>
+            You must opt in to continue. If you're not
+            paying, you're the product.
+        </p>
+    {/if}
+
+    <button disabled={!yes}>Subscribe</button>
+
+    <h2>Insecurity questions</h2>
+
+    <form on:submit|preventDefault={handleSubmit}>
+        <select
+            bind:value={selected}
+            on:change={() => (answer = '')}
+        >
+            {#each questions as question}
+                <option value={question}>
+                    {question.text}
+                </option>
+            {/each}
+        </select>
+
+        <input bind:value={answer} />
+
+        <button disabled={!answer} type="submit">
+            Submit
+        </button>
+    </form>
+
+    <p>
+        selected question {selected
+            ? selected.id
+            : '[waiting...]'}
+    </p>
 </div>
 
 <style>

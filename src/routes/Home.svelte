@@ -1,9 +1,48 @@
 <script lang="ts">
-    import type ICat from "../../@types/ICat";
-    import type IUser from "../../@types/IUser";
+    import { onMount, beforeUpdate, afterUpdate, tick, onDestroy } from 'svelte';
+
+    import type ICat from "../@types/ICat";
+    import type IUser from "../@types/IUser";
     import NextPage from "../page/NextPage.svelte";
     import Outer from "../page/Outer.svelte";
     import BigRedButton from "../page/BigRedButton.svelte";
+    // @ts-ignore
+    import { paint } from '$lib/gradient';
+    // @ts-ignore
+    import { time, elapsed, greeting, storeName } from '$lib/store';
+
+    // svlete의 생명주기
+    // DOM이 처음 랜더링될 때 실행
+    onMount(() => {
+        console.log('onMount');
+		// const canvas = document.querySelector('canvas');
+		// const context = canvas?.getContext('2d');
+
+		// let frame = requestAnimationFrame(function loop(t) {
+		// 	frame = requestAnimationFrame(loop);
+		// 	paint(context, t);
+		// });
+
+		// return () => {
+		// 	cancelAnimationFrame(frame);
+		// };
+	});
+
+    // svelte의 생명주기
+    // DOM이 업데이트되기 바로 전에 작업이 수행되도록 예약
+    beforeUpdate(() => {
+        console.log('beforeUpdate');
+    });
+
+    // svelte의 생명주기
+    // DOM이 데이터와 동기화되면 코드를 실행하는 데 사용
+    afterUpdate(() => {
+        console.log('afterUpdate');
+    });
+
+    onDestroy(() => {
+        console.log('onDestroy');
+    });
 
 	let name: string = 'world';
 	let src: string = 'images/favicon.png';
@@ -70,7 +109,51 @@
 		alert(
 			`answered question ${selected.id} (${selected.text}) with "${answer}"`
 		);
+	};
+
+    let scoops = 1;
+	let flavours: any[] = [];
+    const formatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+
+    let textareaValue: string = `Some words are *italic*, some are **bold**\n\n- lists\n- are\n- cool`;
+
+    let text: string = `Select some text and hit the tab key to toggle uppercase`;
+    async function handleKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Tab') return;
+
+		event.preventDefault();
+
+		const { selectionStart, selectionEnd, value } = this;
+		const selection = value.slice(selectionStart, selectionEnd);
+
+		const replacement = /[a-z]/.test(selection)
+			? selection.toUpperCase()
+			: selection.toLowerCase();
+
+		text =
+			value.slice(0, selectionStart) +
+			replacement +
+			value.slice(selectionEnd);
+
+        // 컴포넌트가 처음 초기화될 때뿐만 아니라 언제든지 호출할 수 있다는 점에서 다른 라이프사이클 함수와 다름.
+        // 보류 중인 상태 변경이 DOM에 적용되자마자(또는 보류 중인 상태 변경이 없는 경우 즉시) 해결되는 프로미스를 반환
+        // Svelte에서 컴포넌트 상태를 업데이트하면 DOM이 즉시 업데이트되지 않습니다.
+        // 대신 다음 마이크로태스크까지 기다렸다가 다른 컴포넌트를 포함해 적용해야 할 다른 변경 사항이 있는지 확인합니다.
+        // 이렇게 하면 불필요한 작업을 피할 수 있고 브라우저에서 더 효과적으로 일괄 처리할 수 있습니다.
+		await tick();
+		this.selectionStart = selectionStart;
+		this.selectionEnd = selectionEnd;
 	}
+
+    const formatter2 = new Intl.DateTimeFormat(
+		'en',
+		{
+			hour12: true,
+			hour: 'numeric',
+			minute: '2-digit',
+			second: '2-digit'
+		}
+	);
 </script>
 
 <div>
@@ -191,6 +274,87 @@
             ? selected.id
             : '[waiting...]'}
     </p>
+
+    <h2>Size</h2>
+
+    <!-- bind:group으로 묶은 radio 버튼 -->
+    {#each [1, 2, 3] as number}
+        <label>
+            <input
+                type="radio"
+                name="scoops"
+                value={number}
+                bind:group={scoops}
+            />
+
+            {number} {number === 1 ? 'scoop' : 'scoops'}
+        </label>
+    {/each}
+
+    <h2>Flavours</h2>
+
+    <!-- bind:group으로 묶은 checkbox -->
+    {#each ['cookies and cream', 'mint choc chip', 'raspberry ripple'] as flavour}
+        <label>
+            <input
+                type="checkbox"
+                name="flavours"
+                value={flavour}
+                bind:group={flavours}
+            />
+
+            {flavour}
+        </label>
+    {/each}
+
+    <!--
+        bind:group로 묶는 select
+        multiple 속성을 추가하면 다중값을 선택할 수 있다.
+     -->
+    <select multiple bind:value={flavours}>
+        {#each ['cookies and cream', 'mint choc chip', 'raspberry ripple'] as flavour}
+            <option>{flavour}</option>
+        {/each}
+    </select>
+
+    {#if flavours.length === 0}
+        <p>Please select at least one flavour</p>
+    {:else if flavours.length > scoops}
+        <p>Can't order more flavours than scoops!</p>
+    {:else}
+        <p>
+            You ordered {scoops} {scoops === 1 ? 'scoop' : 'scoops'}
+            of {formatter.format(flavours)}
+        </p>
+    {/if}
+
+    input
+	<textarea bind:value={textareaValue}></textarea>
+
+    <canvas
+        width={32}
+        height={32}
+    />
+
+    <textarea
+        value={text}
+        on:keydown={handleKeydown}
+    />
+
+    <h1>The time is {formatter2.format($time)}</h1>
+
+    <p>
+        This page has been open for
+        {$elapsed}
+        {$elapsed === 1 ? 'second' : 'seconds'}
+    </p>
+
+    <h1>{$greeting}</h1>
+    <input bind:value={$storeName} />
+
+    <button on:click={() => $storeName += '!'}>
+        Add exclamation mark!
+    </button>
 </div>
 
 <style>
@@ -203,4 +367,22 @@
     button {
         width: 200px;
     }
+
+	textarea {
+		flex: 1;
+		resize: none;
+	}
+
+    /* canvas {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		background-color: #666;
+		mask: url(/images/svelte-logo-mask.svg) 50% 50% no-repeat;
+		mask-size: 60vmin;
+		-webkit-mask: url(/images/svelte-logo-mask.svg) 50% 50% no-repeat;
+		-webkit-mask-size: 60vmin;
+	} */
 </style>

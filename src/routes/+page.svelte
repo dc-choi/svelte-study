@@ -1,7 +1,7 @@
 <script>
-    import Body from "./components/Body.svelte";
+    import Home from "./Home.svelte";
 </script>
 
 <div>
-    <Body />
+    <Home />
 </div>

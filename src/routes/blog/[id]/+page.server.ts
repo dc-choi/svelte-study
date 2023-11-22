@@ -7,7 +7,7 @@ import { posts } from '../data';
  * 데이터 프로퍼티를 통해 +page.svelte에서 액세스할 수 있습니다.
  */
 export function load({ params }) {
-    const parseId = parseInt(params.slug);
+    const parseId = parseInt(params.id);
 	const post = posts.find((post) => post.id === parseId);
 
 	if (!post) throw error(404);
